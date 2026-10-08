@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mis Puntos de Venta</title>
+<style>
+#lock-screen {
+  position: fixed; inset: 0; background: #1a1714;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px;
+}
+#lock-screen .lock-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px; color: #fff; letter-spacing: 2px; margin-bottom: 6px;
+}
+#lock-screen .lock-logo span { color: #c0392b; }
+#lock-screen .lock-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: #555; text-transform: uppercase;
+  letter-spacing: 2px; margin-bottom: 40px;
+}
+#lock-screen .lock-input-wrap { width: 100%; max-width: 280px; }
+#lock-screen input[type="email"],
+#lock-screen input[type="password"] {
+  width: 100%; background: #2a2724; border: 1px solid #3a3734;
+  color: #fff; font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 15px; padding: 14px 16px; border-radius: 10px;
+  margin-bottom: 10px;
+  appearance: none; -webkit-appearance: none;
+}
+#lock-screen input[type="email"]:focus,
+#lock-screen input[type="password"]:focus { outline: none; border-color: #c0392b; }
+#lock-screen .lock-btn {
+  width: 100%; background: #c0392b; color: #fff; border: none;
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+  letter-spacing: 1px; padding: 14px; border-radius: 10px; cursor: pointer;
+  margin-top: 4px;
+}
+#lock-screen .lock-btn:disabled { background: #555; cursor: not-allowed; }
+#lock-screen .lock-error {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  color: #c0392b; margin-top: 10px; text-align: center; min-height: 16px;
+}
+#loading-screen {
+  position: fixed; inset: 0; background: #1a1714;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 9998;
+}
+#loading-screen .load-txt {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  color: #555; letter-spacing: 2px; text-transform: uppercase; margin-top: 16px;
+}
+#loading-screen .load-logo {
+  font-family: 'Bebas Neue', sans-serif; font-size: 36px;
+  color: #fff; letter-spacing: 2px;
+}
+#loading-screen .load-logo span { color: #c0392b; }
+#app { display: none; }
+</style>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #f5f0e8;
+  --bg2: #ede8de;
+  --surface: #ffffff;
+  --border: #d4cdc0;
+  --border2: #c4bdb0;
+  --ink: #1a1714;
+  --ink2: #4a4540;
+  --muted: #8a8278;
+  --accent: #c0392b;
+  --accent-light: #fde8e6;
+  --green: #27735a;
+  --green-light: #e4f4ee;
+  --amber: #b8620a;
+  --amber-light: #fef3e2;
+  --blue: #1a5276;
+  --blue-light: #e8f0f8;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', sans-serif;
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* NAV */
+.nav {
+  background: var(--ink);
+  padding: 0 16px;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.nav::-webkit-scrollbar { display: none; }
+
+.nav-brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: #fff;
+  padding: 14px 16px 14px 0;
+  white-space: nowrap;
+  letter-spacing: 1px;
+  border-right: 1px solid #333;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.nav-brand span { color: var(--accent); }
+
+.nav-tab {
+  background: none;
+  border: none;
+  color: #888;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 14px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+.nav-tab.active { color: #fff; border-bottom-color: var(--accent); }
+.nav-tab:hover:not(.active) { color: #ccc; }
+
+/* PAGES */
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* PUNTO SELECTOR */
+.puntos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.punto-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.punto-card.active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.punto-card.inactive {
+  opacity: 0.5;
+}
+.punto-nombre {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.punto-tipo {
+  font-size: 10px;
+  color: var(--muted);
+}
+.punto-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+}
+.badge-activo { background: var(--green-light); color: var(--green); }
+.badge-inactivo { background: var(--bg2); color: var(--muted); }
+
+/* SALDO */
+.saldo-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+.saldo-big.positivo { color: var(--accent); }
+.saldo-big.negativo { color: var(--blue); }
+.saldo-big.cero { color: var(--muted); }
+.saldo-desc { font-size: 12px; color: var(--muted); margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+.stat-box {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+}
+.stat-label { font-size: 9px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 1px; margin-top: 1px; }
+
+/* INVENTARIO */
+.inv-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bg2);
+}
+.inv-item:last-child { border-bottom: none; }
+.inv-nombre { font-size: 13px; color: var(--ink); font-weight: 500; }
+.inv-categoria { font-size: 10px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+.inv-piezas {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  color: var(--ink);
+  min-width: 50px;
+  text-align: right;
+}
+.inv-piezas.bajo { color: var(--accent); }
+.inv-piezas.cero { color: var(--border2); }
+
+/* FORMS */
+label {
+  display: block;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+
+input, select, textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  appearance: none;
+  -webkit-appearance: none;
+  margin-bottom: 12px;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; }
+
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.input-row > div { }
+
+.tipo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.tipo-btn {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  color: var(--muted);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 10px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+.tipo-btn .icon { font-size: 18px; display: block; margin-bottom: 3px; }
+.tipo-btn.active-entrega { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+.tipo-btn.active-abono { background: var(--green-light); border-color: var(--green); color: var(--green); }
+.tipo-btn.active-compra { background: var(--amber-light); border-color: var(--amber); color: var(--amber); }
+.tipo-btn.active-corte { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+
+.pago-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.pago-btn {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  color: var(--muted);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  padding: 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.pago-btn.active { background: var(--green-light); border-color: var(--green); color: var(--green); }
+
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 1px;
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-primary:active { opacity: 0.85; }
+
+.btn-secondary {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* HISTORIAL */
+.mov-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bg2);
+  animation: fadeIn 0.2s ease;
+}
+.mov-item:last-child { border-bottom: none; padding-bottom: 4px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+.mov-tipo-tag {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+.tag-entrega { background: var(--accent-light); color: var(--accent); }
+.tag-abono { background: var(--green-light); color: var(--green); }
+.tag-compra { background: var(--amber-light); color: var(--amber); }
+.tag-corte { background: var(--blue-light); color: var(--blue); }
+
+.mov-desc { font-size: 13px; color: var(--ink); margin-bottom: 2px; }
+.mov-meta { font-size: 10px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+.mov-monto { font-family: 'Bebas Neue', sans-serif; font-size: 20px; text-align: right; }
+.mov-monto.suma { color: var(--accent); }
+.mov-monto.resta { color: var(--green); }
+.mov-saldo-mini { font-size: 10px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; text-align: right; margin-top: 2px; }
+.mov-del { background: none; border: none; color: var(--border2); cursor: pointer; font-size: 16px; padding-left: 8px; align-self: center; }
+
+/* REPORTES */
+.report-periodo {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.periodo-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 8px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.periodo-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bg2);
+}
+.ranking-item:last-child { border-bottom: none; }
+.ranking-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: var(--border2);
+  min-width: 24px;
+}
+.ranking-num.top { color: var(--accent); }
+.ranking-bar-wrap { flex: 1; }
+.ranking-nombre { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+.ranking-bar { height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+.ranking-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.4s ease; }
+.ranking-piezas {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: var(--ink);
+  min-width: 40px;
+  text-align: right;
+}
+.ranking-unit { font-size: 9px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+
+/* PUNTOS PAGE */
+.punto-config {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.punto-config-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.punto-config-nombre { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; }
+.punto-config-tipo { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.toggle-btn {
+  background: none;
+  border: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  color: var(--muted);
+}
+.toggle-btn.activo { border-color: var(--green); color: var(--green); background: var(--green-light); }
+
+/* EMPTY */
+.empty { text-align: center; padding: 30px 16px; color: var(--muted); }
+.empty-icon { font-size: 28px; margin-bottom: 8px; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--ink); color: #fff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; font-weight: 500;
+  padding: 10px 20px; border-radius: 20px;
+  transition: transform 0.25s ease;
+  pointer-events: none; white-space: nowrap; z-index: 200;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+.divider { height: 1px; background: var(--bg2); margin: 8px 0 14px; }
+
+.corte-info { background: var(--blue-light); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; color: var(--blue); font-family: 'IBM Plex Mono', monospace; }
+
+select option { background: #fff; }
+
+/* REMISIÓN */
+.rem-estado-pendiente { background: var(--amber-light); color: var(--amber); }
+.rem-estado-confirmada { background: var(--green-light); color: var(--green); }
+.rem-badge {
+  font-size: 9px; padding: 2px 8px; border-radius: 10px;
+  font-family: 'IBM Plex Mono', monospace; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.rem-mini-tag {
+  background: var(--bg2); border-radius: 4px; padding: 2px 7px;
+  font-size: 10px; font-family: 'IBM Plex Mono', monospace; display: inline-block;
+}
+.rem-rec-header {
+  display: grid; grid-template-columns: 1fr 52px 52px 64px;
+  gap: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+  padding: 6px 0; border-bottom: 2px solid var(--bg2); margin-bottom: 4px;
+}
+.rem-rec-row {
+  display: grid; grid-template-columns: 1fr 52px 52px 64px;
+  gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--bg2); align-items: center;
+}
+.rem-rec-num {
+  font-family: 'Bebas Neue', sans-serif; font-size: 22px; text-align: center;
+}
+.rem-rec-alerta {
+  background: var(--accent-light); border-radius: 6px; padding: 8px 10px;
+  font-size: 11px; color: var(--accent); font-family: 'IBM Plex Mono', monospace;
+  margin-top: 8px; display: flex; gap: 8px; align-items: flex-start;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- PANTALLA DE CARGA -->
+<div id="loading-screen">
+  <div class="load-logo">CARNES<span>.</span></div>
+  <div class="load-txt">Cargando datos…</div>
+</div>
+
+<!-- PANTALLA DE LOGIN -->
+<div id="lock-screen">
+  <div class="lock-logo">CARNES<span>.</span></div>
+  <div class="lock-sub">Super Carnes La Esperanza</div>
+  <div class="lock-input-wrap">
+    <input type="email" id="lock-email" placeholder="Correo electrónico"
+      onkeydown="if(event.key==='Enter') document.getElementById('lock-pass').focus()">
+    <input type="password" id="lock-pass" placeholder="Contraseña"
+      onkeydown="if(event.key==='Enter') iniciarSesion()">
+    <button class="lock-btn" id="lock-btn" onclick="iniciarSesion()">ENTRAR</button>
+    <div class="lock-error" id="lock-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<nav class="nav">
+  <div class="nav-brand">CARNES<span>.</span></div>
+  <button class="nav-tab active" onclick="goPage('dashboard')">Inicio</button>
+  <button class="nav-tab" onclick="goPage('registrar')">Registrar</button>
+  <button class="nav-tab" onclick="goPage('inventario')">Inventario</button>
+  <button class="nav-tab" onclick="goPage('historial')">Historial</button>
+  <button class="nav-tab" onclick="goPage('reportes')">Reportes</button>
+  <button class="nav-tab" onclick="goPage('remision')">Remisión</button>
+  <button class="nav-tab" onclick="goPage('puntos')">Puntos</button>
+  <button class="nav-tab" onclick="cerrarSesion()" style="margin-left:auto;color:#c0392b">Salir</button>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+
+  <div style="padding: 4px 0 12px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--muted); letter-spacing:1px;">PUNTO ACTIVO</div>
+  </div>
+
+  <div class="puntos-grid" id="dash-puntos"></div>
+
+  <div class="card" id="dash-saldo-card">
+    <div class="card-title">Saldo cuenta corriente <span id="dash-punto-nombre" style="color:var(--ink)">—</span></div>
+    <div class="saldo-big cero" id="dash-saldo">$0</div>
+    <div class="saldo-desc" id="dash-saldo-desc">—</div>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--accent)" id="dash-entregado">$0</div>
+        <div class="stat-label">Entregado</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--green)" id="dash-cobrado">$0</div>
+        <div class="stat-label">Cobrado</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--amber)" id="dash-comprado">$0</div>
+        <div class="stat-label">Comprado</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Inventario rápido — <span id="dash-inv-punto">—</span></div>
+    <div id="dash-inv-lista">
+      <div class="empty"><div class="empty-icon">📦</div>Sin inventario aún</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- REGISTRAR -->
+<div class="page" id="page-registrar">
+  <div class="card">
+    <div class="card-title">Punto de venta</div>
+    <select id="reg-punto" onchange="onPuntoChange()"></select>
+
+    <div class="card-title">Tipo de movimiento</div>
+    <div class="tipo-grid" id="tipo-grid">
+      <button class="tipo-btn active-entrega" id="tbtn-entrega" onclick="setTipo('entrega')">
+        <span class="icon">🥩</span>Entregué producto
+      </button>
+      <button class="tipo-btn" id="tbtn-abono" onclick="setTipo('abono')">
+        <span class="icon">💵</span>Me pagaron
+      </button>
+      <button class="tipo-btn" id="tbtn-compra" onclick="setTipo('compra')">
+        <span class="icon">📦</span>Compré insumo
+      </button>
+      <button class="tipo-btn" id="tbtn-corte" onclick="setTipo('corte')" style="display:none">
+        <span class="icon">📋</span>Corte 15 días
+      </button>
+    </div>
+
+    <!-- ENTREGA -->
+    <div id="form-entrega">
+      <label>Producto</label>
+      <select id="reg-producto" onchange="onProductoChange()"></select>
+      <div class="input-row">
+        <div>
+          <label>Piezas / bolsas</label>
+          <input type="number" id="reg-piezas" placeholder="0" min="1" oninput="calcTotal()">
+        </div>
+        <div>
+          <label>Precio unitario ($)</label>
+          <input type="number" id="reg-precio" placeholder="0.00" step="0.01" oninput="calcTotal()">
+        </div>
+      </div>
+      <div class="input-row">
+        <div>
+          <label>Total ($)</label>
+          <input type="number" id="reg-total" placeholder="0.00" step="0.01">
+        </div>
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="reg-fecha-e">
+        </div>
+      </div>
+    </div>
+
+    <!-- ABONO -->
+    <div id="form-abono" style="display:none">
+      <div class="input-row">
+        <div>
+          <label>Monto ($)</label>
+          <input type="number" id="reg-monto-a" placeholder="0.00" step="0.01">
+        </div>
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="reg-fecha-a">
+        </div>
+      </div>
+      <label>Forma de pago</label>
+      <div class="pago-row">
+        <button class="pago-btn active" id="pbtn-efectivo" onclick="setPago('efectivo')">💵 Efectivo</button>
+        <button class="pago-btn" id="pbtn-transferencia" onclick="setPago('transferencia')">📲 Transferencia</button>
+      </div>
+    </div>
+
+    <!-- COMPRA INSUMO -->
+    <div id="form-compra" style="display:none">
+      <div class="input-row">
+        <div>
+          <label>Monto ($)</label>
+          <input type="number" id="reg-monto-c" placeholder="0.00" step="0.01">
+        </div>
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="reg-fecha-c">
+        </div>
+      </div>
+      <label>Descripción del insumo</label>
+      <input type="text" id="reg-desc-c" placeholder="Ej: pulpa 5kg, empaque, etc.">
+    </div>
+
+    <!-- CORTE -->
+    <div id="form-corte" style="display:none">
+      <div class="corte-info">📋 Registra las ventas reportadas en este corte de 15 días</div>
+      <div id="corte-productos-lista"></div>
+      <div class="input-row">
+        <div>
+          <label>Fecha corte</label>
+          <input type="date" id="reg-fecha-corte">
+        </div>
+        <div>
+          <label>Total a cobrar ($)</label>
+          <input type="number" id="reg-total-corte" placeholder="0.00" step="0.01" readonly style="background:#f0f0f0">
+        </div>
+      </div>
+    </div>
+
+    <label>Nota (opcional)</label>
+    <input type="text" id="reg-nota" placeholder="Observaciones...">
+
+    <button class="btn-primary" onclick="registrar()">REGISTRAR</button>
+  </div>
+</div>
+
+<!-- INVENTARIO -->
+<div class="page" id="page-inventario">
+  <div style="padding: 4px 0 12px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--muted); letter-spacing:1px;">EXISTENCIAS</div>
+  </div>
+  <div class="puntos-grid" id="inv-puntos"></div>
+  <div class="card" id="inv-card">
+    <div class="card-title">Productos en <span id="inv-punto-label">—</span></div>
+    <div id="inv-lista"></div>
+  </div>
+</div>
+
+<!-- HISTORIAL -->
+<div class="page" id="page-historial">
+  <div class="card" style="margin-bottom:10px; padding:12px">
+    <select id="hist-punto" onchange="renderHistorial()" style="margin-bottom:0"></select>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      Movimientos
+      <button class="btn-secondary" onclick="limpiarHistorial()">Borrar todo</button>
+    </div>
+    <div id="hist-lista"></div>
+  </div>
+</div>
+
+<!-- REPORTES -->
+<div class="page" id="page-reportes">
+  <div class="card">
+    <div class="card-title">Punto de venta</div>
+    <select id="rep-punto" onchange="renderReportes()" style="margin-bottom:0"></select>
+  </div>
+  <div class="card">
+    <div class="card-title">Período</div>
+    <div class="report-periodo">
+      <button class="periodo-btn active" id="per-semana" onclick="setPeriodo('semana')">Semana</button>
+      <button class="periodo-btn" id="per-mes" onclick="setPeriodo('mes')">Mes</button>
+      <button class="periodo-btn" id="per-año" onclick="setPeriodo('año')">Año</button>
+      <button class="periodo-btn" id="per-global" onclick="setPeriodo('global')">Todo</button>
+    </div>
+    <div id="rep-ranking"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Resumen financiero</div>
+    <div id="rep-financiero"></div>
+  </div>
+</div>
+
+<!-- REMISIÓN -->
+<div class="page" id="page-remision">
+
+  <!-- Vista: lista -->
+  <div id="rem-lista-vista">
+    <div style="padding:4px 0 12px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--muted); letter-spacing:1px;">REMISIONES</div>
+      <button onclick="remNueva()" style="background:var(--accent);color:#fff;border:none;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;padding:8px 18px;border-radius:8px;cursor:pointer">+ NUEVA</button>
+    </div>
+    <div id="rem-lista-items"></div>
+  </div>
+
+  <!-- Vista: nueva remisión -->
+  <div id="rem-nueva-vista" style="display:none">
+    <div style="padding:4px 0 12px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--muted); letter-spacing:1px;">NUEVA REMISIÓN</div>
+      <button onclick="remVolverLista()" class="btn-secondary">← Volver</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Destino y fecha</div>
+      <select id="rem-punto"></select>
+      <label>Fecha de entrega</label>
+      <input type="date" id="rem-fecha">
+      <div class="divider"></div>
+      <div class="card-title">¿Cuánto dejas de cada producto? <span style="font-weight:400;font-size:9px">(deja en 0 lo que no entregas)</span></div>
+      <div id="rem-productos-form"></div>
+      <label style="margin-top:12px">Nota (opcional)</label>
+      <input type="text" id="rem-nota" placeholder="Ej: también voy a traer salsa la siguiente semana">
+      <button class="btn-primary" onclick="guardarRemision()">GUARDAR Y VER REMISIÓN</button>
+    </div>
+  </div>
+
+  <!-- Vista: detalle / reconciliación -->
+  <div id="rem-detalle-vista" style="display:none">
+    <div style="padding:4px 0 12px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--muted); letter-spacing:1px;">DETALLE</div>
+      <button onclick="remVolverLista()" class="btn-secondary">← Volver</button>
+    </div>
+    <div id="rem-detalle-content"></div>
+  </div>
+
+</div>
+
+<!-- MODAL: Remisión para compartir por WhatsApp -->
+<div id="rem-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:100; padding:16px; overflow-y:auto; -webkit-overflow-scrolling:touch;">
+  <div id="rem-modal-doc" style="background:#fff; max-width:380px; margin:0 auto; border-radius:4px; padding:28px 22px;"></div>
+  <div style="text-align:center; margin-top:16px; padding-bottom:24px">
+    <p style="color:#aaa; font-size:11px; font-family:'IBM Plex Mono',monospace; margin-bottom:14px; line-height:1.6">📸 Toma una captura de pantalla<br>y mándala por WhatsApp</p>
+    <button onclick="cerrarRemModal()" style="background:none;border:1px solid #555;color:#ccc;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px 24px;border-radius:20px;cursor:pointer">Cerrar</button>
+  </div>
+</div>
+
+<!-- PUNTOS DE VENTA -->
+<div class="page" id="page-puntos">
+  <div id="puntos-lista"></div>
+  <div class="card">
+    <div class="card-title">Agregar punto de venta</div>
+    <label>Nombre</label>
+    <input type="text" id="nuevo-nombre" placeholder="Ej: Tienda La Lupita">
+    <label>Tipo</label>
+    <select id="nuevo-tipo">
+      <option value="cuenta_corriente">Cuenta corriente (abonos parciales)</option>
+      <option value="consignacion">Consignación (corte cada 15 días)</option>
+      <option value="consignacion_porcentaje">Consignación con porcentaje</option>
+    </select>
+    <label id="label-porcentaje" style="display:none">Mi porcentaje (%)</label>
+    <input type="number" id="nuevo-porcentaje" placeholder="Ej: 70" style="display:none" min="1" max="99">
+    <button class="btn-primary" onclick="agregarPunto()">AGREGAR PUNTO</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATOS BASE ───────────────────────────────────────────────────────────────
+
+const PRODUCTOS_DEFAULT = [
+  // 45g
+  { id: 'cs45n', nombre: 'Carne seca natural', presentacion: '45g', categoria: 'Carne seca' },
+  { id: 'cs45ch', nombre: 'Carne seca chiltepín', presentacion: '45g', categoria: 'Carne seca' },
+  { id: 'cs45m', nombre: 'Carne seca morita', presentacion: '45g', categoria: 'Carne seca' },
+  { id: 'mac45', nombre: 'Machaca', presentacion: '45g', categoria: 'Carne seca' },
+  // 150g
+  { id: 'cs150n', nombre: 'Carne seca natural', presentacion: '150g', categoria: 'Carne seca' },
+  { id: 'cs150ch', nombre: 'Carne seca chiltepín', presentacion: '150g', categoria: 'Carne seca' },
+  { id: 'cs150m', nombre: 'Carne seca morita', presentacion: '150g', categoria: 'Carne seca' },
+  // 250g
+  { id: 'mac250', nombre: 'Machaca', presentacion: '250g', categoria: 'Carne seca' },
+  // Otros
+  { id: 'patas10', nombre: 'Patas de pollo deshidratadas', presentacion: '10 pzas', categoria: 'Pollo' },
+  { id: 'miel460', nombre: 'Miel', presentacion: '460ml', categoria: 'Miel' },
+  { id: 'miel300', nombre: 'Miel', presentacion: '300ml', categoria: 'Miel' },
+  { id: 'qf', nombre: 'Queso fresco', presentacion: 'pieza', categoria: 'Queso' },
+  { id: 'qfv', nombre: 'Queso fresco al vacío', presentacion: 'pieza', categoria: 'Queso' },
+];
+
+const PUNTOS_DEFAULT = [
+  {
+    id: 'carnicerias',
+    nombre: 'Carnicería',
+    subtitulo: 'Mi hermano',
+    tipo: 'cuenta_corriente',
+    activo: true,
+    porcentaje: null
+  }
+];
+
+// ─── SUPABASE ─────────────────────────────────────────────────────────────────
+
+const SUPABASE_URL = 'https://smzgohnlbcsqgthubacc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtemdvaG5sYmNzcWd0aHViYWNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MTUwMDYsImV4cCI6MjEwNjk5MTAwNn0.iN55W0PabcqbzALOEXTRjukm9kZ0fgfM79f-KRsG3eE';
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+
+let state = {
+  puntos: [],
+  movimientos: [],
+  inventario: {},
+  remisiones: [],
+  productos: PRODUCTOS_DEFAULT,
+};
+
+let currentPage = 'dashboard';
+let dashPuntoId = 'carnicerias';
+let invPuntoId = 'carnicerias';
+let regTipo = 'entrega';
+let regPago = 'efectivo';
+let repPeriodo = 'semana';
+let corteItems = {};
+let _currentUserId = null;
+
+// ─── HELPERS DE TRANSFORMACIÓN ────────────────────────────────────────────────
+
+function puntoToRow(p) {
+  return { id: p.id, user_id: _currentUserId, nombre: p.nombre, subtitulo: p.subtitulo || null,
+    tipo: p.tipo, activo: p.activo, porcentaje: p.porcentaje || null };
+}
+function movToRow(m) {
+  return { id: m.id, user_id: _currentUserId, punto_id: m.puntoId, tipo: m.tipo,
+    producto_id: m.productoId || null, producto_nombre: m.productoNombre || null,
+    piezas: m.piezas || null, precio: m.precio || null, monto: m.monto || 0,
+    fecha: m.fecha || null, nota: m.nota || null, pago: m.pago || null,
+    es_remision: m.esRemision || false, es_corte: m.esCorte || false };
+}
+function invToRows() {
+  const rows = [];
+  for (const puntoId in state.inventario) {
+    for (const productoId in state.inventario[puntoId]) {
+      rows.push({ user_id: _currentUserId, punto_id: puntoId, producto_id: productoId,
+        cantidad: state.inventario[puntoId][productoId] || 0 });
+    }
+  }
+  return rows;
+}
+function remToRow(r) {
+  return { id: r.id, user_id: _currentUserId, punto_id: r.puntoId, fecha: r.fecha || null,
+    estado: r.estado || 'pendiente', items: r.items || [],
+    nota: r.nota || null, fecha_confirmacion: r.fechaConfirmacion || null };
+}
+
+function puntoFromRow(r) {
+  return { id: r.id, nombre: r.nombre, subtitulo: r.subtitulo, tipo: r.tipo,
+    activo: r.activo, porcentaje: r.porcentaje };
+}
+function movFromRow(r) {
+  return { id: r.id, puntoId: r.punto_id, tipo: r.tipo, productoId: r.producto_id,
+    productoNombre: r.producto_nombre, piezas: r.piezas, precio: r.precio, monto: r.monto,
+    fecha: r.fecha, nota: r.nota, pago: r.pago, esRemision: r.es_remision, esCorte: r.es_corte };
+}
+function invFromRows(rows) {
+  const inv = {};
+  (rows || []).forEach(r => {
+    if (!inv[r.punto_id]) inv[r.punto_id] = {};
+    inv[r.punto_id][r.producto_id] = r.cantidad;
+  });
+  return inv;
+}
+function remFromRow(r) {
+  return { id: r.id, puntoId: r.punto_id, fecha: r.fecha, estado: r.estado,
+    items: r.items || [], nota: r.nota, fechaConfirmacion: r.fecha_confirmacion,
+    createdAt: r.created_at };
+}
+
+// ─── CARGA DESDE SUPABASE ─────────────────────────────────────────────────────
+
+async function loadFromSupabase() {
+  const [{ data: puntos }, { data: movs }, { data: invRows }, { data: rems }] = await Promise.all([
+    sbClient.from('puntos').select('*').eq('user_id', _currentUserId),
+    sbClient.from('movimientos').select('*').eq('user_id', _currentUserId).order('created_at', { ascending: true }),
+    sbClient.from('inventario').select('*').eq('user_id', _currentUserId),
+    sbClient.from('remisiones').select('*').eq('user_id', _currentUserId).order('created_at', { ascending: false }),
+  ]);
+  state.puntos = (puntos && puntos.length > 0) ? puntos.map(puntoFromRow) : PUNTOS_DEFAULT;
+  state.movimientos = (movs || []).map(movFromRow);
+  state.inventario = invFromRows(invRows);
+  state.remisiones = (rems || []).map(remFromRow);
+  dashPuntoId = (state.puntos[0] || {}).id || 'carnicerias';
+  invPuntoId = dashPuntoId;
+}
+
+// ─── GUARDAR EN SUPABASE ──────────────────────────────────────────────────────
+
+async function save() {
+  if (!_currentUserId) return;
+  // Puntos
+  if (state.puntos.length > 0)
+    await sbClient.from('puntos').upsert(state.puntos.map(puntoToRow));
+  // Movimientos
+  if (state.movimientos.length > 0)
+    await sbClient.from('movimientos').upsert(state.movimientos.map(movToRow));
+  // Inventario: borrar y re-insertar (objeto anidado)
+  await sbClient.from('inventario').delete().eq('user_id', _currentUserId);
+  const invRows2 = invToRows();
+  if (invRows2.length > 0)
+    await sbClient.from('inventario').insert(invRows2);
+  // Remisiones
+  if (state.remisiones.length > 0)
+    await sbClient.from('remisiones').upsert(state.remisiones.map(remToRow));
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────────────
+
+function goPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(el => {
+    if (el.getAttribute('onclick').includes(p)) el.classList.add('active');
+  });
+  currentPage = p;
+  if (p === 'dashboard') renderDashboard();
+  if (p === 'registrar') renderFormRegistrar();
+  if (p === 'inventario') renderInventario();
+  if (p === 'historial') renderHistorial();
+  if (p === 'reportes') renderReportes();
+  if (p === 'remision') renderRemision();
+  if (p === 'puntos') renderPuntos();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+
+function renderDashboard() {
+  // Puntos
+  const puntosActivos = state.puntos.filter(p => p.activo);
+  const grid = document.getElementById('dash-puntos');
+  grid.innerHTML = puntosActivos.map(p => `
+    <div class="punto-card ${p.id === dashPuntoId ? 'active' : ''}" onclick="selectDashPunto('${p.id}')">
+      <div class="punto-nombre">${p.nombre}</div>
+      <div class="punto-tipo">${p.subtitulo || tipoLabel(p.tipo)}</div>
+    </div>
+  `).join('');
+
+  const punto = state.puntos.find(p => p.id === dashPuntoId) || puntosActivos[0];
+  if (!punto) return;
+  dashPuntoId = punto.id;
+
+  document.getElementById('dash-punto-nombre').textContent = punto.nombre;
+
+  // Saldo
+  const { saldo, entregado, cobrado, comprado } = calcSaldoPunto(punto.id);
+  const sv = document.getElementById('dash-saldo');
+  sv.textContent = fmt(saldo);
+  sv.className = 'saldo-big ' + (saldo > 0 ? 'positivo' : saldo < 0 ? 'negativo' : 'cero');
+  document.getElementById('dash-saldo-desc').textContent =
+    saldo > 0 ? 'Te deben a ti' : saldo < 0 ? 'Les debes tú' : 'Están a mano ✓';
+  document.getElementById('dash-entregado').textContent = fmt(entregado);
+  document.getElementById('dash-cobrado').textContent = fmt(cobrado);
+  document.getElementById('dash-comprado').textContent = fmt(comprado);
+
+  // Inventario rápido
+  document.getElementById('dash-inv-punto').textContent = punto.nombre;
+  const inv = state.inventario[punto.id] || {};
+  const prods = state.productos.filter(p => (inv[p.id] || 0) > 0);
+
+  if (prods.length === 0) {
+    document.getElementById('dash-inv-lista').innerHTML = '<div class="empty"><div class="empty-icon">📦</div>Sin existencias registradas</div>';
+  } else {
+    document.getElementById('dash-inv-lista').innerHTML = prods.slice(0, 6).map(p => `
+      <div class="inv-item">
+        <div><div class="inv-nombre">${p.nombre}</div><div class="inv-categoria">${p.presentacion}</div></div>
+        <div class="inv-piezas ${(inv[p.id]||0) <= 2 ? 'bajo' : ''}">${inv[p.id] || 0}</div>
+      </div>
+    `).join('');
+  }
+}
+
+function selectDashPunto(id) {
+  dashPuntoId = id;
+  renderDashboard();
+}
+
+// ─── REGISTRAR ────────────────────────────────────────────────────────────────
+
+function renderFormRegistrar() {
+  const puntoSel = document.getElementById('reg-punto');
+  puntoSel.innerHTML = state.puntos.filter(p => p.activo).map(p =>
+    `<option value="${p.id}">${p.nombre}${p.subtitulo ? ' — ' + p.subtitulo : ''}</option>`
+  ).join('');
+  onPuntoChange();
+
+  // Fechas hoy
+  const hoy = new Date().toISOString().split('T')[0];
+  ['reg-fecha-e','reg-fecha-a','reg-fecha-c','reg-fecha-corte'].forEach(id => {
+    document.getElementById(id).value = hoy;
+  });
+
+  // Productos
+  const ps = document.getElementById('reg-producto');
+  ps.innerHTML = state.productos.map(p =>
+    `<option value="${p.id}">${p.nombre} — ${p.presentacion}</option>`
+  ).join('');
+}
+
+function onPuntoChange() {
+  const puntoId = document.getElementById('reg-punto').value;
+  const punto = state.puntos.find(p => p.id === puntoId);
+  if (!punto) return;
+
+  const esConsignacion = punto.tipo !== 'cuenta_corriente';
+  const tbtnCompra = document.getElementById('tbtn-compra');
+  const tbtnAbono = document.getElementById('tbtn-abono');
+  const tbtnCorte = document.getElementById('tbtn-corte');
+
+  tbtnCompra.style.display = esConsignacion ? 'none' : 'block';
+  tbtnAbono.style.display = esConsignacion ? 'none' : 'block';
+  tbtnCorte.style.display = esConsignacion ? 'block' : 'none';
+
+  if (esConsignacion && (regTipo === 'abono' || regTipo === 'compra')) {
+    setTipo('entrega');
+  }
+
+  if (regTipo === 'corte') renderCorteProductos();
+}
+
+function onProductoChange() {
+  // Auto-llenar precio si ya se usó antes
+  const prodId = document.getElementById('reg-producto').value;
+  const movs = state.movimientos.filter(m => m.tipo === 'entrega' && m.productoId === prodId);
+  if (movs.length > 0) {
+    const ultimo = movs[movs.length - 1];
+    if (ultimo.precio) document.getElementById('reg-precio').value = ultimo.precio;
+    calcTotal();
+  }
+}
+
+function calcTotal() {
+  const piezas = parseFloat(document.getElementById('reg-piezas').value) || 0;
+  const precio = parseFloat(document.getElementById('reg-precio').value) || 0;
+  if (piezas > 0 && precio > 0) {
+    document.getElementById('reg-total').value = (piezas * precio).toFixed(2);
+  }
+}
+
+function setTipo(t) {
+  regTipo = t;
+  ['entrega','abono','compra','corte'].forEach(x => {
+    const btn = document.getElementById('tbtn-' + x);
+    if (btn) btn.className = 'tipo-btn';
+  });
+  const activeBtn = document.getElementById('tbtn-' + t);
+  if (activeBtn) activeBtn.className = 'tipo-btn active-' + t;
+
+  ['form-entrega','form-abono','form-compra','form-corte'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('form-' + t).style.display = 'block';
+
+  if (t === 'corte') renderCorteProductos();
+}
+
+function renderCorteProductos() {
+  corteItems = {};
+  const el = document.getElementById('corte-productos-lista');
+  el.innerHTML = state.productos.map(p => `
+    <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--bg2)">
+      <div style="flex:1">
+        <div style="font-size:12px; font-weight:500">${p.nombre}</div>
+        <div style="font-size:10px; color:var(--muted); font-family:'IBM Plex Mono',monospace">${p.presentacion}</div>
+      </div>
+      <input type="number" placeholder="0" min="0" style="width:60px; margin-bottom:0; text-align:center; padding:6px 8px"
+        onchange="updateCorteItem('${p.id}', this.value, ${document.getElementById('reg-punto') ? '' : 0})">
+      <input type="number" placeholder="$" step="0.01" min="0" style="width:72px; margin-bottom:0; text-align:center; padding:6px 8px"
+        onchange="updateCorteItem('${p.id}', null, this.value)">
+    </div>
+  `).join('');
+  el.innerHTML += '<div style="display:grid; grid-template-columns:1fr 60px 72px; gap:10px; padding:6px 0 10px; font-size:9px; font-family:IBM Plex Mono,monospace; color:var(--muted); text-transform:uppercase; letter-spacing:1px"><span></span><span style="text-align:center">Piezas</span><span style="text-align:center">$ c/u</span></div>';
+  // Reorder: put header before items
+  const header = el.lastChild;
+  el.insertBefore(header, el.firstChild);
+}
+
+function updateCorteItem(prodId, piezas, precio) {
+  if (!corteItems[prodId]) corteItems[prodId] = { piezas: 0, precio: 0 };
+  if (piezas !== null) corteItems[prodId].piezas = parseFloat(piezas) || 0;
+  if (precio !== null) corteItems[prodId].precio = parseFloat(precio) || 0;
+  // Recalcular total
+  let total = 0;
+  Object.values(corteItems).forEach(item => { total += item.piezas * item.precio; });
+  document.getElementById('reg-total-corte').value = total.toFixed(2);
+}
+
+function setPago(p) {
+  regPago = p;
+  document.getElementById('pbtn-efectivo').className = 'pago-btn' + (p === 'efectivo' ? ' active' : '');
+  document.getElementById('pbtn-transferencia').className = 'pago-btn' + (p === 'transferencia' ? ' active' : '');
+}
+
+function registrar() {
+  const puntoId = document.getElementById('reg-punto').value;
+  const nota = document.getElementById('reg-nota').value.trim();
+  const hoy = new Date().toISOString().split('T')[0];
+
+  if (regTipo === 'entrega') {
+    const prodId = document.getElementById('reg-producto').value;
+    const piezas = parseInt(document.getElementById('reg-piezas').value) || 0;
+    const precio = parseFloat(document.getElementById('reg-precio').value) || 0;
+    const total = parseFloat(document.getElementById('reg-total').value) || 0;
+    const fecha = document.getElementById('reg-fecha-e').value || hoy;
+    if (piezas <= 0) { showToast('Ingresa las piezas'); return; }
+    if (total <= 0) { showToast('Ingresa el monto'); return; }
+    const prod = state.productos.find(p => p.id === prodId);
+    const mov = { id: Date.now(), puntoId, tipo: 'entrega', productoId: prodId,
+      productoNombre: prod ? `${prod.nombre} ${prod.presentacion}` : '', piezas, precio, monto: total, fecha, nota };
+    state.movimientos.push(mov);
+    // Actualizar inventario
+    if (!state.inventario[puntoId]) state.inventario[puntoId] = {};
+    state.inventario[puntoId][prodId] = (state.inventario[puntoId][prodId] || 0) + piezas;
+    document.getElementById('reg-piezas').value = '';
+    document.getElementById('reg-precio').value = '';
+    document.getElementById('reg-total').value = '';
+
+  } else if (regTipo === 'abono') {
+    const monto = parseFloat(document.getElementById('reg-monto-a').value) || 0;
+    const fecha = document.getElementById('reg-fecha-a').value || hoy;
+    if (monto <= 0) { showToast('Ingresa el monto'); return; }
+    state.movimientos.push({ id: Date.now(), puntoId, tipo: 'abono', monto, pago: regPago, fecha, nota });
+    document.getElementById('reg-monto-a').value = '';
+
+  } else if (regTipo === 'compra') {
+    const monto = parseFloat(document.getElementById('reg-monto-c').value) || 0;
+    const desc = document.getElementById('reg-desc-c').value.trim();
+    const fecha = document.getElementById('reg-fecha-c').value || hoy;
+    if (monto <= 0) { showToast('Ingresa el monto'); return; }
+    state.movimientos.push({ id: Date.now(), puntoId, tipo: 'compra', monto, desc, fecha, nota });
+    document.getElementById('reg-monto-c').value = '';
+    document.getElementById('reg-desc-c').value = '';
+
+  } else if (regTipo === 'corte') {
+    const total = parseFloat(document.getElementById('reg-total-corte').value) || 0;
+    const fecha = document.getElementById('reg-fecha-corte').value || hoy;
+    if (total <= 0) { showToast('Registra al menos un producto vendido'); return; }
+    // Guardar cada producto del corte y descontar inventario
+    Object.entries(corteItems).forEach(([prodId, item]) => {
+      if (item.piezas > 0) {
+        const prod = state.productos.find(p => p.id === prodId);
+        const mov = { id: Date.now() + Math.random(), puntoId, tipo: 'entrega',
+          productoId: prodId, productoNombre: prod ? `${prod.nombre} ${prod.presentacion}` : '',
+          piezas: item.piezas, precio: item.precio, monto: item.piezas * item.precio, fecha,
+          nota: 'Corte 15 días' + (nota ? ' — ' + nota : ''), esCorte: true };
+        state.movimientos.push(mov);
+        if (!state.inventario[puntoId]) state.inventario[puntoId] = {};
+        const actual = state.inventario[puntoId][prodId] || 0;
+        state.inventario[puntoId][prodId] = Math.max(0, actual - item.piezas);
+      }
+    });
+    // Registrar cobro
+    state.movimientos.push({ id: Date.now(), puntoId, tipo: 'abono', monto: total,
+      pago: 'corte_15dias', fecha, nota: 'Cobro corte 15 días' });
+    renderCorteProductos();
+  }
+
+  document.getElementById('reg-nota').value = '';
+  save();
+  showToast('✓ Registrado');
+  renderDashboard();
+}
+
+// ─── INVENTARIO ───────────────────────────────────────────────────────────────
+
+function renderInventario() {
+  const grid = document.getElementById('inv-puntos');
+  grid.innerHTML = state.puntos.filter(p => p.activo).map(p => `
+    <div class="punto-card ${p.id === invPuntoId ? 'active' : ''}" onclick="selectInvPunto('${p.id}')">
+      <div class="punto-nombre">${p.nombre}</div>
+      <div class="punto-tipo">${p.subtitulo || tipoLabel(p.tipo)}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('inv-punto-label').textContent =
+    (state.puntos.find(p => p.id === invPuntoId) || {}).nombre || '—';
+
+  const inv = state.inventario[invPuntoId] || {};
+  const grupos = {};
+  state.productos.forEach(p => {
+    if (!grupos[p.categoria]) grupos[p.categoria] = [];
+    grupos[p.categoria].push(p);
+  });
+
+  let html = '';
+  Object.entries(grupos).forEach(([cat, prods]) => {
+    html += `<div style="font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); padding: 10px 0 6px; border-bottom:2px solid var(--bg2); margin-bottom:4px">${cat}</div>`;
+    prods.forEach(p => {
+      const qty = inv[p.id] || 0;
+      html += `
+        <div class="inv-item">
+          <div>
+            <div class="inv-nombre">${p.nombre}</div>
+            <div class="inv-categoria">${p.presentacion}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px">
+            <button onclick="ajustarInv('${invPuntoId}','${p.id}',-1)" style="background:var(--bg2);border:none;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--ink2)">−</button>
+            <div class="inv-piezas ${qty === 0 ? 'cero' : qty <= 2 ? 'bajo' : ''}">${qty}</div>
+            <button onclick="ajustarInv('${invPuntoId}','${p.id}',1)" style="background:var(--bg2);border:none;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--ink2)">+</button>
+          </div>
+        </div>`;
+    });
+  });
+
+  document.getElementById('inv-lista').innerHTML = html || '<div class="empty"><div class="empty-icon">📦</div>Sin productos</div>';
+}
+
+function selectInvPunto(id) {
+  invPuntoId = id;
+  renderInventario();
+}
+
+function ajustarInv(puntoId, prodId, delta) {
+  if (!state.inventario[puntoId]) state.inventario[puntoId] = {};
+  const actual = state.inventario[puntoId][prodId] || 0;
+  state.inventario[puntoId][prodId] = Math.max(0, actual + delta);
+  save();
+  renderInventario();
+}
+
+// ─── HISTORIAL ────────────────────────────────────────────────────────────────
+
+function renderHistorial() {
+  const sel = document.getElementById('hist-punto');
+  const puntoActual = sel.value;
+  sel.innerHTML = state.puntos.map(p =>
+    `<option value="${p.id}" ${p.id === puntoActual ? 'selected' : ''}>${p.nombre}${p.subtitulo ? ' — ' + p.subtitulo : ''}</option>`
+  ).join('');
+
+  const puntoId = sel.value || (state.puntos[0] || {}).id;
+  const movs = [...state.movimientos].filter(m => m.puntoId === puntoId).reverse();
+
+  // Calcular saldos acumulados
+  const forward = state.movimientos.filter(m => m.puntoId === puntoId);
+  let saldoAcum = 0;
+  const saldosPorId = {};
+  forward.forEach(m => {
+    saldoAcum += m.tipo === 'entrega' ? m.monto : -m.monto;
+    saldosPorId[m.id] = saldoAcum;
+  });
+
+  if (movs.length === 0) {
+    document.getElementById('hist-lista').innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Sin movimientos aún</div>';
+    return;
+  }
+
+  document.getElementById('hist-lista').innerHTML = movs.map(m => {
+    const esSuma = m.tipo === 'entrega';
+    let desc = m.productoNombre || m.desc || '—';
+    if (m.tipo === 'entrega' && m.piezas) desc = `${m.piezas} pza${m.piezas>1?'s':''} · ${desc}`;
+    if (m.nota) desc += ` · ${m.nota}`;
+    let meta = formatFecha(m.fecha);
+    if (m.pago) meta += ` · ${m.pago === 'efectivo' ? '💵 Efectivo' : m.pago === 'transferencia' ? '📲 Transfer' : '📋 Corte'}`;
+    const saldo = saldosPorId[m.id];
+    return `
+      <div class="mov-item">
+        <div>
+          <div><span class="mov-tipo-tag tag-${m.tipo}">${m.tipo === 'entrega' ? 'Entrega' : m.tipo === 'abono' ? 'Pago' : m.tipo === 'compra' ? 'Compra' : 'Corte'}</span></div>
+          <div class="mov-desc">${desc}</div>
+          <div class="mov-meta">${meta}</div>
+        </div>
+        <div>
+          <div class="mov-monto ${esSuma ? 'suma' : 'resta'}">${esSuma ? '+' : '−'}${fmt(m.monto)}</div>
+          <div class="mov-saldo-mini">saldo: ${fmt(saldo)}</div>
+          <button class="mov-del" onclick="eliminarMov(${m.id})">×</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function eliminarMov(id) {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  const m = state.movimientos.find(x => x.id === id);
+  if (m && m.tipo === 'entrega' && m.productoId) {
+    // Revertir inventario
+    if (state.inventario[m.puntoId] && state.inventario[m.puntoId][m.productoId]) {
+      state.inventario[m.puntoId][m.productoId] = Math.max(0,
+        (state.inventario[m.puntoId][m.productoId] || 0) - m.piezas);
+    }
+  }
+  state.movimientos = state.movimientos.filter(x => x.id !== id);
+  save();
+  renderHistorial();
+}
+
+function limpiarHistorial() {
+  const puntoId = document.getElementById('hist-punto').value;
+  if (!confirm(`¿Borrar TODOS los movimientos de este punto? No se puede deshacer.`)) return;
+  state.movimientos = state.movimientos.filter(m => m.puntoId !== puntoId);
+  state.inventario[puntoId] = {};
+  // Eliminar en Supabase
+  if (_currentUserId) {
+    sbClient.from('movimientos').delete().eq('user_id', _currentUserId).eq('punto_id', puntoId).then(() => {});
+    sbClient.from('inventario').delete().eq('user_id', _currentUserId).eq('punto_id', puntoId).then(() => {});
+  }
+  save();
+  renderHistorial();
+}
+
+// ─── REPORTES ─────────────────────────────────────────────────────────────────
+
+function renderReportes() {
+  const sel = document.getElementById('rep-punto');
+  const current = sel.value;
+  sel.innerHTML = state.puntos.map(p =>
+    `<option value="${p.id}" ${p.id === current ? 'selected' : ''}>${p.nombre}${p.subtitulo ? ' — ' + p.subtitulo : ''}</option>`
+  ).join('');
+
+  const puntoId = sel.value || (state.puntos[0] || {}).id;
+  const ahora = new Date();
+
+  // Filtrar por período
+  const movsFiltrados = state.movimientos.filter(m => {
+    if (m.puntoId !== puntoId || m.tipo !== 'entrega') return false;
+    const fecha = new Date(m.fecha + 'T12:00:00');
+    if (repPeriodo === 'semana') {
+      const lunes = new Date(ahora);
+      lunes.setDate(ahora.getDate() - ahora.getDay() + 1);
+      lunes.setHours(0,0,0,0);
+      return fecha >= lunes;
+    } else if (repPeriodo === 'mes') {
+      return fecha.getMonth() === ahora.getMonth() && fecha.getFullYear() === ahora.getFullYear();
+    } else if (repPeriodo === 'año') {
+      return fecha.getFullYear() === ahora.getFullYear();
+    }
+    return true; // global
+  });
+
+  // Agrupar por producto
+  const porProducto = {};
+  movsFiltrados.forEach(m => {
+    if (!porProducto[m.productoId]) porProducto[m.productoId] = { nombre: m.productoNombre, piezas: 0, monto: 0 };
+    porProducto[m.productoId].piezas += m.piezas || 0;
+    porProducto[m.productoId].monto += m.monto || 0;
+  });
+
+  const ranking = Object.entries(porProducto).sort((a,b) => b[1].piezas - a[1].piezas);
+  const maxPiezas = ranking.length > 0 ? ranking[0][1].piezas : 1;
+
+  if (ranking.length === 0) {
+    document.getElementById('rep-ranking').innerHTML = '<div class="empty"><div class="empty-icon">📊</div>Sin datos en este período</div>';
+  } else {
+    document.getElementById('rep-ranking').innerHTML = ranking.map(([, data], i) => `
+      <div class="ranking-item">
+        <div class="ranking-num ${i === 0 ? 'top' : ''}">${i + 1}</div>
+        <div class="ranking-bar-wrap">
+          <div class="ranking-nombre">${data.nombre}</div>
+          <div class="ranking-bar"><div class="ranking-fill" style="width:${(data.piezas/maxPiezas*100)}%"></div></div>
+        </div>
+        <div>
+          <div class="ranking-piezas">${data.piezas}</div>
+          <div class="ranking-unit">piezas</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Resumen financiero
+  const allMovs = state.movimientos.filter(m => m.puntoId === puntoId);
+  let totalEntregado = 0, totalCobrado = 0, totalComprado = 0;
+  allMovs.forEach(m => {
+    if (m.tipo === 'entrega') totalEntregado += m.monto;
+    else if (m.tipo === 'abono') totalCobrado += m.monto;
+    else if (m.tipo === 'compra') totalComprado += m.monto;
+  });
+  const saldo = totalEntregado - totalCobrado - totalComprado;
+
+  document.getElementById('rep-financiero').innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+      <div class="stat-box"><div class="stat-val" style="color:var(--accent)">${fmt(totalEntregado)}</div><div class="stat-label">Total entregado</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--green)">${fmt(totalCobrado)}</div><div class="stat-label">Total cobrado</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--amber)">${fmt(totalComprado)}</div><div class="stat-label">Total comprado</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:${saldo>=0?'var(--accent)':'var(--blue)'}">${fmt(saldo)}</div><div class="stat-label">Saldo pendiente</div></div>
+    </div>
+  `;
+}
+
+function setPeriodo(p) {
+  repPeriodo = p;
+  ['semana','mes','año','global'].forEach(x => {
+    document.getElementById('per-' + x).className = 'periodo-btn' + (x === p ? ' active' : '');
+  });
+  renderReportes();
+}
+
+// ─── PUNTOS ───────────────────────────────────────────────────────────────────
+
+function renderPuntos() {
+  document.getElementById('puntos-lista').innerHTML = state.puntos.map(p => `
+    <div class="punto-config">
+      <div class="punto-config-header">
+        <div>
+          <div class="punto-config-nombre">${p.nombre}${p.subtitulo ? ' — ' + p.subtitulo : ''}</div>
+          <div class="punto-config-tipo">${tipoLabel(p.tipo)}${p.porcentaje ? ` · ${p.porcentaje}% para mí` : ''}</div>
+        </div>
+        <button class="toggle-btn ${p.activo ? 'activo' : ''}" onclick="togglePunto('${p.id}')">
+          ${p.activo ? 'Activo' : 'Inactivo'}
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  // Mostrar campo porcentaje
+  document.getElementById('nuevo-tipo').onchange = function() {
+    const show = this.value === 'consignacion_porcentaje';
+    document.getElementById('label-porcentaje').style.display = show ? 'block' : 'none';
+    document.getElementById('nuevo-porcentaje').style.display = show ? 'block' : 'none';
+  };
+}
+
+function togglePunto(id) {
+  const p = state.puntos.find(x => x.id === id);
+  if (p) p.activo = !p.activo;
+  save();
+  renderPuntos();
+}
+
+function agregarPunto() {
+  const nombre = document.getElementById('nuevo-nombre').value.trim();
+  const tipo = document.getElementById('nuevo-tipo').value;
+  const porcentaje = tipo === 'consignacion_porcentaje'
+    ? (parseFloat(document.getElementById('nuevo-porcentaje').value) || null)
+    : null;
+  if (!nombre) { showToast('Ingresa el nombre'); return; }
+  state.puntos.push({ id: 'punto_' + Date.now(), nombre, tipo, activo: true, porcentaje });
+  document.getElementById('nuevo-nombre').value = '';
+  save();
+  renderPuntos();
+  showToast('✓ Punto agregado');
+}
+
+// ─── REMISIÓN ─────────────────────────────────────────────────────────────────
+
+let remActualId = null;
+
+function renderRemision() {
+  remVolverLista();
+  const items = [...state.remisiones].reverse();
+
+  if (items.length === 0) {
+    document.getElementById('rem-lista-items').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🧾</div>
+        <div style="font-weight:500">Sin remisiones aún</div>
+        <div style="font-size:11px; margin-top:6px; font-family:'IBM Plex Mono',monospace; line-height:1.6; color:var(--muted)">
+          Registra aquí qué productos<br>dejas en cada punto de venta.<br>
+          Ideal para compartir por WhatsApp.
+        </div>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('rem-lista-items').innerHTML = items.map(rem => {
+    const punto = state.puntos.find(p => p.id === rem.puntoId);
+    const totalPiezas = rem.items.reduce((s, i) => s + i.piezas, 0);
+    const esConf = rem.estado === 'confirmada';
+    const badge = `<span class="rem-badge ${esConf ? 'rem-estado-confirmada' : 'rem-estado-pendiente'}">${esConf ? 'CONFIRMADA' : 'PENDIENTE'}</span>`;
+    const miniTags = rem.items.slice(0, 3).map(i =>
+      `<span class="rem-mini-tag">${i.piezas}× ${i.productoNombre.split(' ').slice(0, 3).join(' ')}</span>`
+    ).join(' ');
+    const masTag = rem.items.length > 3 ? `<span style="font-size:10px;color:var(--muted)">+${rem.items.length - 3} más</span>` : '';
+
+    return `
+      <div class="card" style="cursor:pointer" onclick="verRemision('${rem.id}')">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12px">${punto ? punto.nombre : rem.puntoId}</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px">${formatFecha(rem.fecha)} · ${totalPiezas} pzas · ${rem.items.length} producto${rem.items.length > 1 ? 's' : ''}</div>
+          </div>
+          ${badge}
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center">${miniTags}${masTag}</div>
+      </div>`;
+  }).join('');
+}
+
+function remNueva() {
+  document.getElementById('rem-lista-vista').style.display = 'none';
+  document.getElementById('rem-detalle-vista').style.display = 'none';
+  document.getElementById('rem-nueva-vista').style.display = 'block';
+
+  const sel = document.getElementById('rem-punto');
+  sel.innerHTML = state.puntos.filter(p => p.activo).map(p =>
+    `<option value="${p.id}">${p.nombre}${p.subtitulo ? ' — ' + p.subtitulo : ''}</option>`
+  ).join('');
+
+  document.getElementById('rem-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rem-nota').value = '';
+
+  // Construir form de productos por categoría
+  const grupos = {};
+  state.productos.forEach(p => {
+    if (!grupos[p.categoria]) grupos[p.categoria] = [];
+    grupos[p.categoria].push(p);
+  });
+
+  let html = '';
+  Object.entries(grupos).forEach(([cat, prods]) => {
+    html += `<div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);padding:10px 0 6px;border-bottom:2px solid var(--bg2);margin-bottom:4px">${cat}</div>`;
+    prods.forEach(p => {
+      html += `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg2)">
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:500">${p.nombre}</div>
+            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">${p.presentacion}</div>
+          </div>
+          <input type="number" id="remq-${p.id}" placeholder="0" min="0"
+            style="width:72px;margin-bottom:0;text-align:center;padding:8px" inputmode="numeric">
+        </div>`;
+    });
+  });
+
+  document.getElementById('rem-productos-form').innerHTML = html;
+}
+
+function remVolverLista() {
+  document.getElementById('rem-nueva-vista').style.display = 'none';
+  document.getElementById('rem-detalle-vista').style.display = 'none';
+  document.getElementById('rem-lista-vista').style.display = 'block';
+}
+
+function guardarRemision() {
+  const puntoId = document.getElementById('rem-punto').value;
+  const fecha = document.getElementById('rem-fecha').value || new Date().toISOString().split('T')[0];
+  const nota = document.getElementById('rem-nota').value.trim();
+
+  const items = [];
+  state.productos.forEach(p => {
+    const el = document.getElementById('remq-' + p.id);
+    if (!el) return;
+    const piezas = parseInt(el.value) || 0;
+    if (piezas > 0) items.push({ productoId: p.id, productoNombre: `${p.nombre} ${p.presentacion}`, piezas });
+  });
+
+  if (items.length === 0) { showToast('Agrega al menos un producto'); return; }
+
+  // Crear movimientos de entrega para cada producto
+  items.forEach(item => {
+    const prevMovs = state.movimientos.filter(m => m.tipo === 'entrega' && m.productoId === item.productoId);
+    const precioRef = prevMovs.length > 0 ? (prevMovs[prevMovs.length - 1].precio || 0) : 0;
+    state.movimientos.push({
+      id: Date.now() + Math.random(),
+      puntoId, tipo: 'entrega',
+      productoId: item.productoId, productoNombre: item.productoNombre,
+      piezas: item.piezas, precio: precioRef, monto: precioRef * item.piezas,
+      fecha, nota: nota ? `Remisión — ${nota}` : 'Remisión', esRemision: true
+    });
+    if (!state.inventario[puntoId]) state.inventario[puntoId] = {};
+    state.inventario[puntoId][item.productoId] = (state.inventario[puntoId][item.productoId] || 0) + item.piezas;
+  });
+
+  const rem = {
+    id: 'rem_' + Date.now(),
+    puntoId, fecha, estado: 'pendiente',
+    items, nota,
+    createdAt: new Date().toISOString()
+  };
+  state.remisiones.push(rem);
+  save();
+  showToast('✓ Remisión guardada');
+  verRemision(rem.id);
+}
+
+function verRemision(remId) {
+  remActualId = remId;
+  const rem = state.remisiones.find(r => r.id === remId);
+  if (!rem) return;
+
+  document.getElementById('rem-lista-vista').style.display = 'none';
+  document.getElementById('rem-nueva-vista').style.display = 'none';
+  document.getElementById('rem-detalle-vista').style.display = 'block';
+
+  const punto = state.puntos.find(p => p.id === rem.puntoId);
+  const inv = state.inventario[rem.puntoId] || {};
+  const esConf = rem.estado === 'confirmada';
+  const badge = `<span class="rem-badge ${esConf ? 'rem-estado-confirmada' : 'rem-estado-pendiente'}">${esConf ? 'CONFIRMADA' : 'PENDIENTE'}</span>`;
+
+  // Reconciliación: entregado - inventario actual = implícito vendido
+  const recItems = rem.items.map(item => {
+    const enTienda = inv[item.productoId] || 0;
+    const vendidoImplicito = Math.max(0, item.piezas - enTienda);
+    return { ...item, enTienda, vendidoImplicito };
+  });
+
+  const totalDejé = rem.items.reduce((s, i) => s + i.piezas, 0);
+  const totalHay = recItems.reduce((s, i) => s + i.enTienda, 0);
+  const totalVendido = recItems.reduce((s, i) => s + i.vendidoImplicito, 0);
+
+  // ¿Hay discrepancias sospechosas? (inventario > entregado = algo no cuadra)
+  const alertas = recItems.filter(i => i.enTienda > i.piezas);
+  const alertaHtml = alertas.length > 0
+    ? `<div class="rem-rec-alerta">⚠️ <span>Hay más piezas en inventario que las que dejaste. Revisa si hubo otra entrega no registrada en esta remisión.</span></div>`
+    : '';
+
+  let html = `
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:13px">${punto ? punto.nombre : rem.puntoId}</div>
+          <div style="font-size:11px; color:var(--muted); margin-top:2px">${formatFecha(rem.fecha)}</div>
+          ${rem.nota ? `<div style="font-size:11px; color:var(--ink2); margin-top:4px; line-height:1.4">📝 ${rem.nota}</div>` : ''}
+        </div>
+        ${badge}
+      </div>
+
+      <button class="btn-primary" onclick="abrirModalRemision('${rem.id}')" style="margin-bottom:10px">
+        📤 VER PARA COMPARTIR / WhatsApp
+      </button>
+      ${!esConf ? `<button class="btn-secondary" style="width:100%;text-align:center;padding:10px;margin-bottom:0" onclick="confirmarRemision('${rem.id}')">✓ Marcar como confirmada por el punto</button>` : ''}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Reconciliación de inventario</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom:12px; line-height:1.5; font-family:'IBM Plex Mono',monospace">
+        Dejé → Hay ahora → Implicado vendido
+      </div>
+
+      <div class="rem-rec-header">
+        <span>Producto</span>
+        <span style="text-align:center">Dejé</span>
+        <span style="text-align:center">Hay</span>
+        <span style="text-align:center">Vendido?</span>
+      </div>
+
+      ${recItems.map(item => `
+        <div class="rem-rec-row">
+          <div style="font-size:12px; font-weight:500; line-height:1.3">${item.productoNombre}</div>
+          <div class="rem-rec-num" style="color:var(--accent)">${item.piezas}</div>
+          <div class="rem-rec-num" style="color:var(--ink)">${item.enTienda}</div>
+          <div class="rem-rec-num" style="color:${item.vendidoImplicito > 0 ? 'var(--green)' : 'var(--muted)'}">${item.vendidoImplicito}</div>
+        </div>`).join('')}
+
+      <div class="rem-rec-row" style="border-bottom:none; padding-top:12px; border-top:2px solid var(--bg2)">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1px">TOTAL</div>
+        <div class="rem-rec-num" style="color:var(--accent); font-size:26px">${totalDejé}</div>
+        <div class="rem-rec-num" style="font-size:26px">${totalHay}</div>
+        <div class="rem-rec-num" style="color:var(--green); font-size:26px">${totalVendido}</div>
+      </div>
+
+      ${alertaHtml}
+    </div>
+
+    <div style="text-align:center; padding:8px 0 4px">
+      <button onclick="eliminarRemision('${rem.id}')" style="background:none;border:none;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;padding:8px;cursor:pointer;text-decoration:underline">Eliminar esta remisión</button>
+    </div>
+  `;
+
+  document.getElementById('rem-detalle-content').innerHTML = html;
+}
+
+function confirmarRemision(remId) {
+  const rem = state.remisiones.find(r => r.id === remId);
+  if (!rem) return;
+  rem.estado = 'confirmada';
+  rem.fechaConfirmacion = new Date().toISOString();
+  save();
+  showToast('✓ Marcada como confirmada');
+  verRemision(remId);
+}
+
+function eliminarRemision(remId) {
+  if (!confirm('¿Eliminar esta remisión? Los movimientos de inventario y cuenta ya quedaron registrados.')) return;
+  state.remisiones = state.remisiones.filter(r => r.id !== remId);
+  if (_currentUserId)
+    sbClient.from('remisiones').delete().eq('user_id', _currentUserId).eq('id', remId).then(() => {});
+  save();
+  showToast('Remisión eliminada');
+  renderRemision();
+}
+
+function abrirModalRemision(remId) {
+  const rem = state.remisiones.find(r => r.id === remId);
+  if (!rem) return;
+  const punto = state.puntos.find(p => p.id === rem.puntoId);
+  const totalPiezas = rem.items.reduce((s, i) => s + i.piezas, 0);
+  const folio = rem.id.replace('rem_', '').slice(-6);
+
+  document.getElementById('rem-modal-doc').innerHTML = `
+    <div style="border-bottom:2px solid #1a1714; padding-bottom:14px; margin-bottom:14px">
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:2px; line-height:1">SUPER CARNES</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; color:#c0392b; line-height:1">LA ESPERANZA</div>
+      <div style="font-size:9px; color:#999; margin-top:4px; font-family:'IBM Plex Mono',monospace; letter-spacing:1px">XICOTEPEC DE JUÁREZ, PUEBLA</div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; font-size:11px; font-family:'IBM Plex Mono',monospace">
+      <div>
+        <div style="color:#999; text-transform:uppercase; letter-spacing:1px; font-size:8px; margin-bottom:2px">REMISIÓN #</div>
+        <div style="font-weight:700">${folio}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="color:#999; text-transform:uppercase; letter-spacing:1px; font-size:8px; margin-bottom:2px">FECHA</div>
+        <div style="font-weight:700">${formatFecha(rem.fecha)}</div>
+      </div>
+      <div>
+        <div style="color:#999; text-transform:uppercase; letter-spacing:1px; font-size:8px; margin-bottom:2px">ENTREGADO EN</div>
+        <div style="font-weight:700">${punto ? punto.nombre : rem.puntoId}</div>
+        ${punto && punto.subtitulo ? `<div style="color:#666; font-size:10px">${punto.subtitulo}</div>` : ''}
+      </div>
+      <div style="text-align:right">
+        <div style="color:#999; text-transform:uppercase; letter-spacing:1px; font-size:8px; margin-bottom:2px">TOTAL PIEZAS</div>
+        <div style="font-family:'Bebas Neue',sans-serif; font-size:28px; color:#c0392b; line-height:1">${totalPiezas}</div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #eee; padding-top:10px; margin-bottom:14px">
+      <div style="display:grid; grid-template-columns:1fr 48px; gap:8px; font-size:8px; font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:1px; color:#aaa; padding-bottom:6px; border-bottom:1px solid #f0f0f0; margin-bottom:6px">
+        <span>PRODUCTO / PRESENTACIÓN</span><span style="text-align:center">CANT.</span>
+      </div>
+      ${rem.items.map(item => `
+        <div style="display:grid; grid-template-columns:1fr 48px; gap:8px; padding:6px 0; border-bottom:1px dotted #f0f0f0; font-size:12px; align-items:center">
+          <div style="line-height:1.3">${item.productoNombre}</div>
+          <div style="font-family:'Bebas Neue',sans-serif; font-size:22px; color:#1a1714; text-align:center; line-height:1">${item.piezas}</div>
+        </div>`).join('')}
+    </div>
+
+    ${rem.nota ? `<div style="font-size:10px; color:#666; margin-bottom:14px; font-family:'IBM Plex Mono',monospace; padding:8px; background:#f8f8f8; border-left:3px solid #c0392b; border-radius:2px">📝 ${rem.nota}</div>` : ''}
+
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid #eee">
+      <div style="font-size:9px; font-family:'IBM Plex Mono',monospace; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin-bottom:28px">Recibí conforme el producto arriba descrito</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:end">
+        <div>
+          <div style="border-top:1px solid #1a1714; padding-top:6px">
+            <div style="font-size:9px; font-family:'IBM Plex Mono',monospace; color:#999; text-transform:uppercase; letter-spacing:1px">ENTREGÓ</div>
+            <div style="font-size:12px; font-weight:600; margin-top:3px">Melissa</div>
+            <div style="font-size:9px; color:#aaa">Super Carnes La Esperanza</div>
+          </div>
+        </div>
+        <div>
+          <div style="height:44px; border-bottom:1px solid #1a1714;"></div>
+          <div style="padding-top:6px">
+            <div style="font-size:9px; font-family:'IBM Plex Mono',monospace; color:#999; text-transform:uppercase; letter-spacing:1px">RECIBIÓ — FIRMA / NOMBRE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('rem-modal').style.display = 'block';
+  // Scroll to top of modal
+  document.getElementById('rem-modal').scrollTop = 0;
+}
+
+function cerrarRemModal() {
+  document.getElementById('rem-modal').style.display = 'none';
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+function calcSaldoPunto(puntoId) {
+  let entregado = 0, cobrado = 0, comprado = 0;
+  state.movimientos.filter(m => m.puntoId === puntoId).forEach(m => {
+    if (m.tipo === 'entrega') entregado += m.monto;
+    else if (m.tipo === 'abono') cobrado += m.monto;
+    else if (m.tipo === 'compra') comprado += m.monto;
+  });
+  return { saldo: entregado - cobrado - comprado, entregado, cobrado, comprado };
+}
+
+function tipoLabel(tipo) {
+  if (tipo === 'cuenta_corriente') return 'Cuenta corriente';
+  if (tipo === 'consignacion') return 'Consignación · corte 15 días';
+  if (tipo === 'consignacion_porcentaje') return 'Consignación · porcentaje';
+  return tipo;
+}
+
+function fmt(n) {
+  return '$' + Math.abs(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatFecha(f) {
+  if (!f) return '—';
+  const [y, m, d] = f.split('-');
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parseInt(d)} ${meses[parseInt(m) - 1]} ${y}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── INIT (se llama después del login) ───────────────────────────────────────
+function initApp() {
+  renderDashboard();
+}
+</script>
+
+</div> <!-- /app -->
+
+<script>
+// ─── AUTH SUPABASE ────────────────────────────────────────────────────────────
+
+function mostrarLoading(visible) {
+  document.getElementById('loading-screen').style.display = visible ? 'flex' : 'none';
+}
+
+async function iniciarSesion() {
+  const email = document.getElementById('lock-email').value.trim();
+  const pass  = document.getElementById('lock-pass').value;
+  const btn   = document.getElementById('lock-btn');
+  if (!email || !pass) {
+    document.getElementById('lock-error').textContent = 'Escribe tu correo y contraseña';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'ENTRANDO…';
+  document.getElementById('lock-error').textContent = '';
+
+  const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    document.getElementById('lock-error').textContent = 'Correo o contraseña incorrectos';
+    btn.disabled = false;
+    btn.textContent = 'ENTRAR';
+    return;
+  }
+
+  _currentUserId = data.user.id;
+  document.getElementById('lock-screen').style.display = 'none';
+  mostrarLoading(true);
+
+  try {
+    await loadFromSupabase();
+  } catch(e) {
+    console.error('Error cargando datos:', e);
+  }
+
+  mostrarLoading(false);
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+
+async function cerrarSesion() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  await sbClient.auth.signOut();
+  _currentUserId = null;
+  state = { puntos: [], movimientos: [], inventario: {}, remisiones: [], productos: PRODUCTOS_DEFAULT };
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('lock-screen').style.display = 'flex';
+  document.getElementById('lock-email').value = '';
+  document.getElementById('lock-pass').value = '';
+  document.getElementById('lock-btn').disabled = false;
+  document.getElementById('lock-btn').textContent = 'ENTRAR';
+}
+
+// Verificar si ya hay sesión activa al cargar
+(async () => {
+  const { data: { session } } = await sbClient.auth.getSession();
+  if (session) {
+    _currentUserId = session.user.id;
+    document.getElementById('lock-screen').style.display = 'none';
+    mostrarLoading(true);
+    try { await loadFromSupabase(); } catch(e) { console.error(e); }
+    mostrarLoading(false);
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  }
+})();
+</script>
+</body>
+</html>
